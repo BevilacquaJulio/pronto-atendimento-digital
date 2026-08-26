@@ -64,7 +64,8 @@ services:
     container_name: bl_pad-livekit
     restart: unless-stopped
     command:
-      - "--dev"
+      - "--udp-port"
+      - "7882"
       - "--bind"
       - "0.0.0.0"
       # Impede o LiveKit de anunciar o IP privado da bridge do Docker

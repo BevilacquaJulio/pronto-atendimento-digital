@@ -47,11 +47,11 @@ export class ProntuarioRepository {
       // ou o prontuário nasce antes dela, ou a criação enxerga o estado final.
       const atendimentos = await tx.$queryRaw<Array<{ id: string }>>(
         Prisma.sql`
-          SELECT "id"
-          FROM "Atendimento"
-          WHERE "id" = ${atendimentoId}::uuid
-            AND "profissionalId" = ${autorId}::uuid
-            AND "status" = 'EM_ANDAMENTO'
+          SELECT id
+          FROM Atendimento
+          WHERE id = ${atendimentoId}
+            AND profissionalId = ${autorId}
+            AND status = 'EM_ANDAMENTO'
           FOR UPDATE
         `,
       );

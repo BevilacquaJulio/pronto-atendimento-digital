@@ -41,6 +41,7 @@ const testEnvironment = {
   CORS_ORIGIN: 'http://localhost:5173',
   API_PORT: '3000',
   NODE_ENV: 'test',
+  SEED_DEMO_PASSWORD: 'senha-publica-e2e-local-nao-usar-fora-de-testes',
 };
 
 const composeArguments = [
@@ -78,6 +79,18 @@ function removeTestEnvironment({ silent = false } = {}) {
     },
   );
   return !result.error && result.status === 0;
+}
+
+function showTestEnvironmentLogs() {
+  spawnSync(
+    'docker',
+    [...composeArguments, 'logs', '--no-color', 'db-test'],
+    {
+      cwd: repositoryDir,
+      env: testEnvironment,
+      stdio: 'inherit',
+    },
+  );
 }
 
 let dockerAvailable = false;
@@ -118,6 +131,10 @@ try {
   failure = error;
 } finally {
   if (dockerAvailable) {
+    if (failure) {
+      console.error('\n[E2E] Logs do MySQL temporário após a falha');
+      showTestEnvironmentLogs();
+    }
     console.log('\n[E2E] Removendo MySQL temporário');
     const removed = removeTestEnvironment();
     if (!removed && !failure) {

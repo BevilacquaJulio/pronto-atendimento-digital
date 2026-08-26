@@ -242,6 +242,33 @@ docker compose config
 docker compose run --rm --build migrate
 ```
 
+As migrations de integridade criam gatilhos no MySQL. Quando o binary log está
+ativo, o administrador do MySQL precisa autorizar temporariamente a criação
+desses gatilhos antes do primeiro deploy:
+
+```sql
+SET GLOBAL log_bin_trust_function_creators = ON;
+```
+
+Se uma tentativa anterior falhou em
+`20260826180200_gatilho_prontuario_imutavel`, habilite a opção acima, marque
+somente essa migration como revertida e reaplique o histórico:
+
+```powershell
+docker compose --profile tools run --rm --build migrate npx prisma migrate resolve --rolled-back 20260826180200_gatilho_prontuario_imutavel
+docker compose --profile tools run --rm --build migrate
+```
+
+Depois que todas as migrations forem aplicadas, o administrador pode restaurar
+a proteção padrão do servidor; os gatilhos já criados continuam ativos:
+
+```sql
+SET GLOBAL log_bin_trust_function_creators = OFF;
+```
+
+Não conceda `SUPER` ao usuário da aplicação. Ele precisa apenas dos privilégios
+do próprio schema, incluindo `TRIGGER`, para criar e executar os gatilhos.
+
 Para popular usuários de demonstração, configure `SEED_DEMO_PASSWORD` somente no
 `api/.env`, mantenha `NODE_ENV=development` e execute localmente. O seed se recusa
 a rodar quando `NODE_ENV=production`:

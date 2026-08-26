@@ -18,7 +18,10 @@ import { FiltroDeExcecoes } from '../src/common/erros/filtro-excecoes';
  * Pré-requisito: `npx prisma migrate reset` (aplica migrations e roda o seed).
  */
 
-const SENHA = 'Senha@123';
+const SENHA = process.env.SEED_DEMO_PASSWORD;
+if (!SENHA) {
+  throw new Error('SEED_DEMO_PASSWORD é obrigatória nos testes E2E');
+}
 
 const CONTAS = {
   ADMIN: 'admin@pad.local',

@@ -207,18 +207,18 @@ export class SalaRepository {
   ): Promise<boolean> {
     const linhas = profissionalId
       ? await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-          SELECT "id"
-          FROM "Atendimento"
-          WHERE "id" = ${atendimentoId}::uuid
-            AND "profissionalId" = ${profissionalId}::uuid
-            AND "status" = 'EM_ANDAMENTO'
+          SELECT id
+          FROM Atendimento
+          WHERE id = ${atendimentoId}
+            AND profissionalId = ${profissionalId}
+            AND status = 'EM_ANDAMENTO'
           FOR UPDATE
         `)
       : await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-          SELECT "id"
-          FROM "Atendimento"
-          WHERE "id" = ${atendimentoId}::uuid
-            AND "status" = 'EM_ANDAMENTO'
+          SELECT id
+          FROM Atendimento
+          WHERE id = ${atendimentoId}
+            AND status = 'EM_ANDAMENTO'
           FOR UPDATE
         `);
     return linhas.length === 1;

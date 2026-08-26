@@ -60,6 +60,27 @@ describe('LoginPage', () => {
     expect(mockedLogin).not.toHaveBeenCalled()
   })
 
+  it('preenche credenciais de demonstração para enfermeiro e médico', async () => {
+    const user = userEvent.setup()
+    renderLogin()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Preencher conta demo de enfermeiro' }),
+    )
+    expect(screen.getByLabelText('E-mail profissional')).toHaveValue(
+      'ana.ferreira@pad.local',
+    )
+    expect(screen.getByLabelText('Senha')).toHaveValue('Senha@123')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Preencher conta demo de médico' }),
+    )
+    expect(screen.getByLabelText('E-mail profissional')).toHaveValue(
+      'carla.nogueira@pad.local',
+    )
+    expect(screen.getByLabelText('Senha')).toHaveValue('Senha@123')
+  })
+
   it('autentica e direciona o profissional para a fila', async () => {
     const user = userEvent.setup()
     mockedLogin.mockResolvedValue({

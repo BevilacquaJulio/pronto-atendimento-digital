@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowRightIcon,
-  CheckCircleIcon,
   EnvelopeSimpleIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -25,6 +24,22 @@ import { login } from '../auth.api'
 import { loginSchema } from '../auth.schema'
 
 type LoginForm = z.infer<typeof loginSchema>
+
+/** Contas do seed — só perfis clínicos; admin fica de fora de propósito. */
+const CONTAS_DEMO = [
+  {
+    papel: 'Enfermeiro',
+    email: 'ana.ferreira@pad.local',
+    rotulo: 'Preencher conta demo de enfermeiro',
+  },
+  {
+    papel: 'Médico',
+    email: 'carla.nogueira@pad.local',
+    rotulo: 'Preencher conta demo de médico',
+  },
+] as const
+
+const SENHA_DEMO = 'Senha@123'
 
 const trustPoints = [
   {
@@ -53,6 +68,7 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -71,6 +87,11 @@ export function LoginPage() {
   })
 
   if (user) return <Navigate to={defaultRouteForRole(user.papel)} replace />
+
+  function preencherContaDemo(email: string) {
+    setValue('email', email, { shouldDirty: true, shouldValidate: true })
+    setValue('senha', SENHA_DEMO, { shouldDirty: true, shouldValidate: true })
+  }
 
   return (
     <main className="login-page">
@@ -180,20 +201,28 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Só no bundle de desenvolvimento: `import.meta.env.DEV` é avaliado
-              em build e o bloco desaparece do artefato de produção. */}
-          {import.meta.env.DEV ? (
-            <details className="demo-access">
-              <summary>Credenciais de demonstração</summary>
-              <div className="demo-access__body">
-                <p>
-                  <CheckCircleIcon size={14} weight="fill" aria-hidden="true" />
-                  carla.nogueira@pad.local
-                </p>
-                <p>Senha: Senha@123</p>
-              </div>
-            </details>
-          ) : null}
+          {/* Atalhos do seed: só enfermeiro e médico; admin fica de fora. */}
+          <div className="demo-access" aria-label="Atalhos de demonstração">
+            <p className="demo-access__label">Demonstração</p>
+            <div className="demo-access__actions">
+              {CONTAS_DEMO.map(({ papel, email, rotulo }) => (
+                <Button
+                  key={email}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-label={rotulo}
+                  onClick={() => preencherContaDemo(email)}
+                >
+                  {papel}
+                </Button>
+              ))}
+            </div>
+            <p className="demo-access__hint">
+              Preenche e-mail e senha do seed. Confirme em &ldquo;Acessar
+              plataforma&rdquo;.
+            </p>
+          </div>
 
           <p className="login-card__footer">
             <ShieldCheckIcon size={14} aria-hidden="true" />

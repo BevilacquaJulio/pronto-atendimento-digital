@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  // prisma/seed.ts e prisma.config.ts são de desenvolvimento: rodam via tsx a
+  // partir do fonte, não do dist. Sem excluí-los, o build de produção carrega
+  // junto o `prisma/config` (devDependency) e ainda emite um seed compilado
+  // que ninguém executa.
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "prisma",
+    "prisma.config.ts"
+  ]
+}

@@ -1,0 +1,122 @@
+services:
+  api:
+    image: bl_pad-api
+    build: ./api
+    container_name: bl_pad-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      API_PORT: 3000
+      # A API administra salas pela rede Docker. O navegador usa LIVEKIT_PUBLIC_URL.
+      LIVEKIT_URL: http://livekit:7880
+    depends_on:
+      livekit:
+        condition: service_healthy
+    networks:
+      - mysql_shared
+      - traefik
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.http.routers.bl_pad-api.rule=Host(`api.${DOMAIN}`)"
+      - traefik.http.routers.bl_pad-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.bl_pad-api.tls=true
+      - traefik.http.routers.bl_pad-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.services.bl_pad-api.loadbalancer.server.port=3000
+    mem_limit: 512m
+    cpus: 0.75
+
+  web:
+    image: bl_pad-app
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: https://api.${DOMAIN}
+        VITE_PUBLIC_APP_URL: https://${DOMAIN}
+    container_name: bl_pad-app
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - traefik
+    logging: *default-logging
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.http.routers.bl_pad-app.rule=Host(`${DOMAIN}`)"
+      - traefik.http.routers.bl_pad-app.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.bl_pad-app.tls=true
+      - traefik.http.routers.bl_pad-app.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.services.bl_pad-app.loadbalancer.server.port=80
+    mem_limit: 128m
+    cpus: 0.25
+
+  livekit:
+    image: livekit/livekit-server:v1.13.1
+    container_name: bl_pad-livekit
+    restart: unless-stopped
+    command:
+      - "--dev"
+      - "--bind"
+      - "0.0.0.0"
+      # Impede o LiveKit de anunciar o IP privado da bridge do Docker
+      # (por exemplo, 172.21.0.3), que o navegador não consegue alcançar.
+      - "--node-ip"
+      - "${LIVEKIT_NODE_IP}"
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "${LIVEKIT_TCP_PORT:-7881}:7881"
+      - "${LIVEKIT_UDP_PORT:-7882}:7882/udp"
+    healthcheck:
+      test: ["CMD", "/livekit-server", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - traefik
+    logging: *default-logging
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.http.routers.bl_pad-livekit.rule=Host(`livekit.${DOMAIN}`)"
+      - traefik.http.routers.bl_pad-livekit.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.bl_pad-livekit.tls=true
+      - traefik.http.routers.bl_pad-livekit.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.services.bl_pad-livekit.loadbalancer.server.port=7880
+    mem_limit: 512m
+    cpus: 1.0
+
+  # One-off (profile "tools"): nunca sobe com `up`. Usa o estágio `build` da
+  # API, que já tem Prisma CLI, schema e migrations.
+  #   docker compose run --rm --build migrate
+  migrate:
+    image: bl_pad-migrate
+    container_name: bl_pad-migrate
+    build:
+      context: ./api
+      target: build
+    profiles:
+      - tools
+    env_file:
+      - .env
+    networks:
+      - mysql_shared
+    command: ["npx", "prisma", "migrate", "deploy"]
+    mem_limit: 512m
+    cpus: 0.5
+
+networks:
+  mysql_shared:
+    external: true
+  traefik:
+    external: true

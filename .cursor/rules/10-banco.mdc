@@ -1,0 +1,139 @@
+---
+description: Regras de banco de dados — Prisma, MySQL, migrations, constraints e concorrência.
+globs: ["api/prisma/**", "api/src/**/*.repository.ts", "api/src/common/prisma/**"]
+alwaysApply: false
+---
+
+# Banco de dados — MySQL + Prisma 7
+
+## Prisma 7 — cinco diferenças que quebram o código se ignoradas
+
+O projeto usa **Prisma 7.9**. Não vale conhecimento de Prisma 5/6 aqui.
+
+1. **Adapter de driver é obrigatório.** `new PrismaClient()` sem adapter lança erro no boot. Para MySQL use `@prisma/adapter-mariadb`:
+
+   ```ts
+   import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
+   super({ adapter });
+   ```
+
+   No `PrismaService` o pool também define `initSql` com
+   `SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED`, para o
+   compare-and-swap do assumir atendimento reavaliar o `WHERE` em cada
+   conexão do pool.
+
+2. **O client é importado da pasta gerada**, nunca de `@prisma/client`:
+
+   ```ts
+   import { PrismaClient, Papel, StatusAtendimento } from '../../generated/prisma/client';
+   ```
+
+   Por padrão esse client gerado é **ESM puro** (usa `import.meta.url` internamente). O resto do projeto — Nest, ts-node, Jest — é CommonJS, e `require()` não carrega um arquivo assim: quebra em runtime com `ReferenceError: exports is not defined in ES module scope`, não em build (confirmado rodando `ts-node` contra o client gerado sem essa flag). Por isso o `generator client` em `schema.prisma` tem `moduleFormat = "cjs"`. Se essa linha sumir numa regeneração, o erro volta — a causa não é o import, é o generator emitindo o formato errado pra este projeto.
+
+3. **A URL do banco mora em `prisma.config.ts`**, não no bloco `datasource` do schema. O `datasource` só declara o provider.
+
+4. **`generated/` fica fora de `node_modules`** e é ignorado pelo Git. `prisma generate` precisa rodar no build do Docker.
+
+5. **Jest precisa de `--experimental-vm-modules`.** No `$connect()`, o Prisma 7 faz `import()` dinâmico do compilador WASM. O Jest intercepta esse `import()` e, sem a flag, derruba o `app.init()` com `A dynamic import callback was invoked without --experimental-vm-modules` — todos os e2e falham no boot, antes de qualquer asserção. Os scripts `test` / `test:e2e` já passam a flag via `node --experimental-vm-modules ./node_modules/jest/bin/jest.js`. Sem isso, `npx jest` sozinho volta a quebrar.
+
+## Não negociável
+
+- `provider = "mysql"`. Nunca PostgreSQL, nunca SQLite (nem em teste — a semântica de bloqueio que estamos testando é do InnoDB em READ COMMITTED).
+- Migrations **versionadas e commitadas**. Nunca `prisma db push`.
+- Prisma é dono do schema: edite `schema.prisma` e gere a migration. Só desça para SQL cru no que o Prisma não expressa (coluna gerada, gatilho), via `migrate dev --create-only`.
+- Chave primária `String @id @default(uuid()) @db.Char(36)`. IDs não enumeráveis reduzem superfície de acesso indevido por troca de ID na URL.
+- Textos clínicos (`queixa`, `anamnese`, `conduta`, `texto`) usam `@db.Text`. No MySQL, `String` sem tipo nativo vira `VARCHAR(191)` e corta o prontuário.
+- Nomes de campo em português (`criadoEm`, `entradaFila`, `finalizadoEm`).
+
+## Concorrência — sempre no banco
+
+**Padrão obrigatório (compare-and-swap):** a condição de estado vai no `WHERE`, nunca num `if` anterior.
+
+```ts
+const { count } = await this.prisma.atendimento.updateMany({
+  where: { id, status: 'AGUARDANDO' },
+  data:  { status: 'EM_ANDAMENTO', profissionalId, iniciadoEm: new Date() },
+});
+if (count === 0) throw new ConflitoDeEstado('ATENDIMENTO_JA_INICIADO'); // 409
+```
+
+Por quê: sob `READ COMMITTED`, a segunda transação espera no bloqueio da linha e, depois que a primeira confirma, o InnoDB **reavalia o `WHERE` contra a versão nova** da linha. A condição falha e `count` é 0. Uma única ida ao banco, sem transação explícita, sem risco de travamento cruzado.
+
+Use `updateMany` (não `update`) porque a condição composta não é chave única.
+
+O comentário no código deve explicar isso em palavras simples — quem ler depois precisa entender por que a condição está no `WHERE` e não num `if`, senão vai "simplificar" e quebrar.
+
+**Nunca** implemente concorrência com: `findFirst` + `if`, mutex na aplicação, ou `count()` prévio.
+
+`SELECT ... FOR UPDATE` só é aceitável quando a decisão depende de ler múltiplas linhas antes de escrever — e nesse caso, comente por que o CAS não bastava.
+
+## Constraints que existem só no SQL cru
+
+Prisma não gera coluna gerada nem trigger. Crie com:
+
+```bash
+npx prisma migrate dev --create-only --name <nome>
+# edite o .sql gerado
+npx prisma migrate dev
+```
+
+**Um profissional, um atendimento ativo:**
+
+MySQL não tem índice único parcial. A coluna gerada vale o id só em `EM_ANDAMENTO` e fica NULL nos demais; UNIQUE aceita vários NULL.
+
+```sql
+ALTER TABLE `Atendimento`
+  ADD COLUMN `profissionalAtivo` CHAR(36)
+    GENERATED ALWAYS AS (
+      IF(`status` = 'EM_ANDAMENTO', `profissionalId`, NULL)
+    ) STORED,
+  ADD UNIQUE INDEX `uniq_profissional_atendimento_ativo` (`profissionalAtivo`);
+```
+
+Violação chega como `PrismaClientKnownRequestError` com `code === 'P2002'` → mapeie para `409 PROFISSIONAL_JA_EM_ATENDIMENTO`.
+
+**Prontuário finalizado é imutável:**
+
+```sql
+CREATE TRIGGER `trg_prontuario_imutavel`
+BEFORE UPDATE ON `Prontuario`
+FOR EACH ROW
+BEGIN
+  IF OLD.`finalizadoEm` IS NOT NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'PRONTUARIO_IMUTAVEL';
+  END IF;
+END;
+```
+
+## Índices — só os que sustentam uma query real
+
+- `@@index([status, entradaFila])` — a query da fila filtra por status e ordena por entrada. Ordem das colunas importa.
+- `@@index([pacienteId])` — histórico do paciente.
+- `@@index([pacienteId, criadoEm])` e `@@index([usuarioId, criadoEm])` em `LogAuditoria`.
+- `cpf` e `email` como `@unique` (já geram índice).
+
+Não crie índice "por precaução". Cada um custa escrita.
+
+## Transações
+
+Use `$transaction` quando duas escritas precisam ser atômicas. Caso canônico — finalizar atendimento:
+
+```ts
+await this.prisma.$transaction([
+  this.prisma.atendimento.updateMany({ where: { id, status: 'EM_ANDAMENTO' }, data: { status: 'FINALIZADO', finalizadoEm: agora } }),
+  this.prisma.salaToken.updateMany({ where: { atendimentoId: id, revogadoEm: null }, data: { revogadoEm: agora } }),
+]);
+```
+
+A auditoria fica **fora** da transação de negócio, deliberadamente: um rollback de negócio não deve apagar a evidência de que houve acesso.
+
+## Seed
+
+`prisma/seed.ts` cria: 1 ADMIN, 2 ENFERMEIRO, 2 MEDICO, ~10 pacientes, ~15 atendimentos distribuídos entre os quatro status e entre hoje / ontem / semana passada — os filtros da fila precisam ter o que filtrar. Senhas em texto no README, hash no banco.
+
+Roda com `npx prisma db seed` (local, demo e CI). O serviço `migrate` do Compose de produção **não** executa seed.
+
+Todo `create` é na verdade um `upsert` com `update: {}` e id fixo (Atendimento não tem chave de negócio única pra upsertar). Repetir o seed não pode duplicar dado nem apagar o que um teste manual já alterou.
+
+Runner configurado em `prisma.config.ts` (`migrations.seed`): `tsx`, não `ts-node`. Tentativa inicial foi `ts-node` pra não introduzir ferramenta nova — quebrou com `Cannot find module './internal/class.js'`: o client gerado importa seus arquivos internos com `.js` apontando pra fonte `.ts` (convenção do `moduleResolution: "nodenext"`), e o `require()` do ts-node não remapeia isso. Só quebra em scripts soltos — o build real do Nest (`tsc`, ver `nest-cli.json`) resolve isso na compilação, então o app em si nunca passa por esse caminho.

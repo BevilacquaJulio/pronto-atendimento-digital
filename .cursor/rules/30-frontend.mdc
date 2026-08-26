@@ -1,0 +1,85 @@
+---
+description: Regras do frontend React/Vite — estrutura, dados, formulários, tratamento de erro, PWA e sala de vídeo.
+globs: ["web/**/*.ts", "web/**/*.tsx", "web/vite.config.ts"]
+alwaysApply: false
+---
+
+# Frontend — React + Vite + TypeScript
+
+## Estrutura
+
+```
+web/src/
+  api/               # cliente HTTP + um arquivo por recurso
+  features/
+    auth/
+    fila/            # tela 1
+    sala/            # tela 2
+    pacientes/       # tela 3
+  components/        # genéricos e burros (Tabela, Badge, Modal)
+  hooks/
+  types/
+```
+
+Cada `features/*` tem seus componentes, hooks e tipos. Só sobe para `components/` o que for usado por duas features.
+
+## Princípio central
+
+**O frontend não é fronteira de segurança.** Esconder botão é experiência de uso, não controle de acesso. Toda decisão real está no backend, e a interface apenas reflete o que o backend já autorizaria.
+
+Nunca replique regra de negócio aqui. Se precisar saber se pode iniciar um atendimento, a fonte é o backend — não um `if` sobre o papel guardado no localStorage.
+
+## Dados
+
+TanStack Query para tudo que vem da API. Sem `useEffect` + `fetch` manual.
+
+- `queryKey` estruturada: `['atendimentos', { status, periodo, busca }]`.
+- Mutations invalidam a query da fila no `onSuccess`.
+- A fila usa `refetchInterval` de ~10s (tempo de espera precisa andar). Não construa WebSocket para isso.
+- `tempoEspera` é **calculado no cliente** a partir de `entradaFila`, não vem pronto do servidor — senão fica velho no instante em que chega.
+
+## Tratamento de erro — por código, nunca por texto
+
+O backend devolve `{ codigo, mensagem }`. O comportamento é decidido pelo `codigo`:
+
+| Status | Comportamento na interface |
+|---|---|
+| `401` | limpa sessão, redireciona para login |
+| `403` | tela/aviso de "sem permissão". **Não** esconde o fato — o usuário precisa entender que existe e não pode |
+| `409` | toast "outro profissional assumiu este atendimento", recarrega a fila automaticamente |
+| `422` | toast explicando a transição inválida, recarrega o item |
+
+O `409` não é falha: é o resultado esperado quando dois profissionais clicam ao mesmo tempo. A interface precisa tratá-lo como um desfecho normal, com mensagem clara e recarga automática da fila.
+
+## Comentários
+
+Ver `00-projeto.mdc` §5. Em português simples, explicando o porquê. No frontend, comente principalmente: por que o `409` recarrega a fila, por que o tempo de espera é calculado no cliente, e por que o service worker não guarda resposta da API.
+
+## Formulários
+
+React Hook Form + Zod, com o **mesmo schema** do backend quando possível. `zodResolver`. Nada de estado de formulário manual com `useState`.
+
+Prontuário finalizado: campos em `readOnly`, botão de salvar sumido, bloco de adendos visível abaixo com autor e data de cada um.
+
+## Sala de atendimento
+
+Layout três colunas: vídeo · chat · formulário de prontuário.
+
+- O token de sala vem do backend e é **renovado automaticamente** antes de expirar (agende em ~12 min para um TTL de 15).
+- Chat usa o canal de dados do provider de vídeo. **Não** construa WebSocket próprio.
+- Ao finalizar, desconecte da sala e navegue de volta para a fila.
+- Token de sala em memória (state), nunca em `localStorage`.
+
+## PWA
+
+`vite-plugin-pwa` com manifest e ícones.
+
+**Estratégia de cache: `NetworkOnly` para `/api`.** Cachear resposta de dado clínico em service worker é falha de segurança — o dado sobrevive ao logout no disco do usuário. Só o shell da aplicação é cacheado. Isso é decisão deliberada, documentada no README.
+
+## Estilo
+
+Tailwind. Componentes prontos onde der. **Não invente design system.** A prioridade é interface legível e funcional, com estados de carregamento, vazio e erro visíveis nas três telas.
+
+## TypeScript
+
+`strict: true`, sem `any`. Tipos de resposta da API declarados em `types/` e reutilizados nos hooks — nunca `as any` no retorno de fetch.

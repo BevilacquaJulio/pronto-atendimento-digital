@@ -1,0 +1,80 @@
+/* =========================================================================
+   MOVIMENTO
+   Animação aqui serve para explicar de onde a coisa veio, nunca para
+   impressionar. Tudo é curto e tudo desliga em prefers-reduced-motion.
+   ========================================================================= */
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter var(--duration-slow) var(--ease-out) backwards;
+  }
+
+  /* Escalonamento leve: 40ms entre blocos é suficiente para o olho perceber
+     ordem sem que a página pareça lenta. */
+  .page-enter--1 {
+    animation-delay: 40ms;
+  }
+
+  .page-enter--2 {
+    animation-delay: 80ms;
+  }
+
+  .page-enter--3 {
+    animation-delay: 120ms;
+  }
+
+  .page-enter--4 {
+    animation-delay: 160ms;
+  }
+
+  .login-reveal {
+    animation: page-enter var(--duration-slow) var(--ease-out) backwards;
+    animation-delay: calc(var(--reveal-index, 0) * 90ms + 120ms);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+  Respeitar a preferência do sistema não é detalhe de acessibilidade solto:
+  parte dos pacientes e da equipe tem enxaqueca vestibular, e movimento
+  contínuo é gatilho documentado. Zerar a duração em vez de remover as
+  animações mantém os estados finais corretos.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .metric-card:hover,
+  .patient-card:hover,
+  .trust-item:hover {
+    transform: none;
+  }
+}
+
+/* Refinos que só fazem sentido com mouse: em toque, :hover fica "grudado"
+   após o toque e confunde o estado da interface. */
+@media (hover: hover) and (pointer: fine) {
+  .data-table tbody tr:hover .identity-cell .avatar {
+    border-color: var(--navy-300);
+  }
+
+  .link-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+}

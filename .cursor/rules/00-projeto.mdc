@@ -1,0 +1,166 @@
+---
+description: Regras centrais do projeto PAD (Pronto Atendimento Digital) — vocabulário, invariantes, contrato de erros e proibições. Sempre ativo.
+alwaysApply: true
+---
+
+# PAD — Pronto Atendimento Digital
+
+Plataforma de teleatendimento ocupacional: fila de pronto atendimento, triagem, sala de vídeo e prontuário.
+Stack: **NestJS + TypeScript + Prisma + MySQL + React/Vite + Docker + LiveKit**.
+
+Dois eixos orientam toda decisão de código, antes de qualquer outra consideração: **autorização à prova de chamada direta na API** e **concorrência resolvida no banco de dados**.
+
+Documentação de referência: `docs/glossario.md`, `docs/invariantes.md`, `docs/matriz-de-acesso.md`.
+
+---
+
+## 1. Vocabulário congelado — nunca traduza, nunca invente sinônimo
+
+**Domínio em português. Técnico em inglês.**
+
+Entidades: `Paciente` · `Atendimento` · `Prontuario` · `ProntuarioAdendo` · `Triagem` · `SalaToken` · `LogAuditoria` · `Usuario`
+
+Status (exatamente estas quatro palavras, sempre em maiúsculo):
+`AGUARDANDO` · `EM_ANDAMENTO` · `FINALIZADO` · `CANCELADO`
+
+Papéis: `ENFERMEIRO` · `MEDICO` · `ADMIN` (paciente não tem login — é anônimo com token de sala)
+
+Campos de data em português: `criadoEm` · `iniciadoEm` · `finalizadoEm` · `entradaFila` · `expiraEm` · `revogadoEm` · `usadoEm`
+
+Sufixos técnicos em inglês: `AtendimentoService`, `ProntuarioController`, `SalaTokenGuard`, `AtendimentoModule`.
+
+Rotas em português, plural, minúsculo: `/atendimentos`, `/prontuarios`, `/pacientes`, `/usuarios`, `/auditoria`.
+
+**Nunca** use: `appointment`, `consultation`, `medicalRecord`, `createdAt`, `doctor`, `nurse`, `patient`, `WAITING`, `IN_PROGRESS`.
+
+---
+
+## 2. Onde cada invariante é forçado
+
+Hierarquia de força, da mais forte para a mais fraca:
+`constraint no banco > transação > service > controller > frontend`
+
+Sempre empurre a regra para o nível mais profundo possível.
+
+| Invariante | Forçado em |
+|---|---|
+| Um atendimento nunca tem dois profissionais | `UPDATE ... WHERE id=? AND status='AGUARDANDO'` atômico |
+| Um profissional nunca tem dois atendimentos `EM_ANDAMENTO` | coluna gerada + unique no MySQL |
+| Status nunca sai do grafo | função pura `podeTransicionar()` + trigger |
+| Prontuário finalizado nunca muda | trigger `BEFORE UPDATE` |
+| Todo acesso a prontuário deixa rastro | interceptor global (grava inclusive em `403`) |
+| Token de sala morre com o atendimento | transação de finalização + `deleteRoom` no provider |
+| Link do paciente é de um atendimento e de um uso | hash do token + `usadoEm`/`expiraEm`/`revogadoEm` |
+| Dado clínico exige papel **e** ser dono do recurso | guards globais nega-por-padrão + checagem de escopo |
+
+---
+
+## 3. Contrato de erros HTTP — use exatamente assim
+
+| Código | Significado | Exemplo |
+|---|---|---|
+| `401` | Não autenticado | sem Bearer token |
+| `403` | Autenticado, sem permissão **ou** não é dono do recurso | ADMIN pedindo prontuário; médico pedindo prontuário alheio; link de outro atendimento |
+| `404` | Recurso não existe | UUID inventado |
+| `409` | A operação era válida, mas o estado mudou / conflito de concorrência | dois cliques em Iniciar; prontuário já finalizado |
+| `422` | A operação nunca seria válida no grafo de estados | `FINALIZADO → EM_ANDAMENTO` |
+
+**409 ≠ 422.** 422 é impossibilidade semântica. 409 é corrida perdida. Nunca troque.
+
+Todo erro retorna `{ codigo: 'ATENDIMENTO_JA_INICIADO', mensagem: '...' }`. `codigo` é `SCREAMING_SNAKE_CASE` e estável — o frontend decide comportamento por `codigo`, nunca por texto.
+
+---
+
+## 4. Proibições absolutas
+
+1. **Nunca** `if (status === 'AGUARDANDO')` antes de um `update` para controlar concorrência. A condição vai **dentro** do `WHERE`.
+2. **Nunca** PostgreSQL nem SQLite. O provider é `mysql`. A coluna gerada + unique e os gatilhos dependem disso.
+3. **Nunca** dar a ADMIN acesso a conteúdo clínico (prontuário, fila, pacientes). ADMIN gere identidade e lê auditoria.
+4. **Nunca** tratar o frontend como fronteira de segurança. Esconder botão é UX. A decisão é sempre do backend.
+5. **Nunca** confiar num ID vindo do cliente sem checar que o recurso pertence a quem pediu.
+6. **Nunca** usar o JWT de sessão como token de sala. São ciclos de vida diferentes.
+7. **Nunca** guardar token de sala em texto puro no banco. Só o SHA-256.
+8. **Nunca** editar ou deletar `Prontuario` finalizado nem `LogAuditoria`. Correção é adendo.
+9. **Nunca** cachear resposta de `/api` no service worker do PWA. É dado clínico.
+10. **Nunca** usar `any`. TypeScript em modo estrito.
+
+---
+
+## 5. Comentários no código
+
+Escreva para alguém competente que está lendo este arquivo pela primeira vez e não participou das decisões.
+
+**Comente o porquê, nunca o quê.** O código já diz o que faz.
+
+```ts
+// ruim — repete o código
+// incrementa o contador
+contador++;
+
+// ruim — jargão sem explicação
+// EvalPlanQual garante a reavaliação do predicado
+const { count } = await prisma.atendimento.updateMany({ ... });
+
+// bom — explica a decisão em palavras simples
+// A condição do status vai dentro do WHERE, e não num "if" antes.
+// Assim o banco decide quem vence: se duas requisições chegarem juntas,
+// a segunda encontra o status já alterado e atualiza zero linhas.
+const { count } = await prisma.atendimento.updateMany({ ... });
+```
+
+**Regras:**
+
+- Português, frases curtas, palavras comuns. Se precisar de um termo técnico, explique em meia linha na primeira vez que ele aparecer.
+- Comente onde o código **parece errado mas está certo** — é ali que alguém "conserta" e quebra tudo.
+- Comente onde há uma decisão com alternativa razoável: diga qual foi descartada e por quê, em uma linha.
+- Não comente o óbvio. Getter, DTO simples e mapeamento direto não precisam de nada.
+- Nada de código comentado. Apague — o histórico do Git guarda.
+- `TODO` só com motivo e escopo: `// TODO: mover para fila assíncrona quando houver mais de um worker`.
+- Comentário desatualizado é pior que ausência de comentário. Se mudar o código, mude o comentário junto.
+
+**Pontos deste projeto que exigem comentário obrigatório:**
+
+| Local | O que o comentário precisa explicar |
+|---|---|
+| `updateMany` do iniciar atendimento | Por que a condição está no `WHERE` e não num `if` |
+| `SELECT` antes desse `updateMany` | Que ele serve para escolher entre `404` e `422`, e **não** para controlar concorrência |
+| Captura do erro `P2002` | Que a coluna gerada + unique é quem impede o segundo atendimento ativo |
+| Trigger de imutabilidade | Que a checagem no service é conveniência e o trigger é a garantia real |
+| Auditoria fora da transação | Por que um rollback de negócio não deve apagar o registro de acesso |
+| `encerrarSala()` na finalização | Que revogar o token não desconecta quem já está dentro da sala |
+
+**JSDoc** apenas em método público de service cujo contrato não é óbvio pela assinatura — principalmente para declarar qual erro ele lança.
+
+```ts
+/**
+ * Assume um atendimento para o profissional informado.
+ * @throws ConflitoDeEstado quando outro profissional assumiu primeiro (409)
+ * @throws ConflitoDeEstado quando o profissional já tem atendimento em andamento (409)
+ * @throws TransicaoInvalida quando o atendimento não está AGUARDANDO (422)
+ */
+```
+
+---
+
+## 6. Git
+
+Commits pequenos, atômicos, em português, formato convencional:
+
+```
+feat(atendimento): assume atendimento com update condicional
+fix(sala): revoga tokens dentro da transação de finalização
+test(autorizacao): matriz papel x rota
+docs(readme): decisões de concorrência
+chore(docker): compose com mysql compartilhado
+```
+
+Branch por bloco de trabalho (`feat/atendimento-concorrencia`), pull request com descrição, merge na `main`. Nunca um commit único e gigante no fim.
+
+---
+
+## 7. Ao gerar código, sempre
+
+- Se uma regra puder ser garantida pelo banco, garanta pelo banco.
+- Prefira função pura e testável para regra de domínio (máquina de estados, cálculo de tempo de espera).
+- Não crie abstração onde não há incerteza. O Prisma já é a camada de acesso a dados; não envolva em repository genérico sem motivo.
+- Nenhum arquivo de código deve conter nota de planejamento, comentário sobre o processo de desenvolvimento ou referência a como o projeto está sendo avaliado. Comentário fala sobre o código e o domínio, nada além disso.

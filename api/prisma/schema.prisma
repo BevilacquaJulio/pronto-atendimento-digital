@@ -1,0 +1,260 @@
+// PAD — Pronto Atendimento Digital
+//
+// Convenção de nomes: conceito do negócio em português (Atendimento, Prontuario),
+// sufixo técnico em inglês. Datas em português (criadoEm, finalizadoEm).
+// Glossário completo em docs/glossario.md.
+//
+// Prisma 7: o generator escreve o client fora de node_modules e a URL do banco
+// mora em prisma.config.ts, não aqui.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  // O client gerado é ESM por padrão (usa import.meta.url internamente).
+  // O resto do projeto (Nest, ts-node, Jest) roda em CommonJS — sem esta
+  // linha, "prisma generate" produz um client que o require() do Node
+  // não carrega (erro em runtime, não em build). Ver .cursor/rules/10-banco.mdc.
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums — as palavras são as mesmas do enunciado, de propósito
+// ---------------------------------------------------------------------------
+
+enum Papel {
+  ENFERMEIRO
+  MEDICO
+  ADMIN
+}
+
+enum StatusAtendimento {
+  AGUARDANDO
+  EM_ANDAMENTO
+  FINALIZADO
+  CANCELADO
+}
+
+// Classificação de risco no padrão Manchester.
+enum Risco {
+  AZUL
+  VERDE
+  AMARELO
+  LARANJA
+  VERMELHO
+}
+
+enum Participante {
+  PROFISSIONAL
+  PACIENTE
+}
+
+enum TipoTokenSala {
+  ACESSO_LIVEKIT
+  LINK_PACIENTE
+}
+
+// ---------------------------------------------------------------------------
+// Pessoas
+// ---------------------------------------------------------------------------
+
+model Usuario {
+  id        String   @id @default(uuid()) @db.Char(36)
+  nome      String   @db.VarChar(120)
+  email     String   @unique @db.VarChar(160)
+  senhaHash String   @db.VarChar(72)
+  papel     Papel
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @db.DateTime(3)
+
+  atendimentos  Atendimento[]
+  triagens      Triagem[]
+  prontuarios   Prontuario[]
+  adendos       ProntuarioAdendo[]
+  salaTokens    SalaToken[]
+  logsAuditoria LogAuditoria[]
+}
+
+model Paciente {
+  id         String   @id @default(uuid()) @db.Char(36)
+  nome       String   @db.VarChar(120)
+  // CPF guardado só com dígitos. A formatação é responsabilidade da interface.
+  cpf        String   @unique @db.Char(11)
+  contato    String   @db.VarChar(40)
+  nascimento DateTime @db.Date
+  criadoEm   DateTime @default(now()) @db.DateTime(3)
+
+  atendimentos  Atendimento[]
+  logsAuditoria LogAuditoria[]
+
+  // A tela de pacientes busca por nome; sem índice isso vira varredura de tabela.
+  @@index([nome])
+}
+
+// ---------------------------------------------------------------------------
+// Atendimento — o agregado central
+// ---------------------------------------------------------------------------
+
+model Atendimento {
+  id     String            @id @default(uuid()) @db.Char(36)
+  status StatusAtendimento @default(AGUARDANDO)
+  risco  Risco?
+
+  pacienteId     String  @db.Char(36)
+  // Nulo enquanto AGUARDANDO. Só recebe valor quando um profissional assume,
+  // e é esse preenchimento que a coluna gerada + unique vigia.
+  profissionalId String? @db.Char(36)
+
+  entradaFila  DateTime  @default(now()) @db.DateTime(3)
+  iniciadoEm   DateTime? @db.DateTime(3)
+  finalizadoEm DateTime? @db.DateTime(3)
+  canceladoEm  DateTime? @db.DateTime(3)
+
+  // Encaminhar do enfermeiro para o médico cria um NOVO atendimento apontando
+  // para o anterior, em vez de trocar o profissional deste. Assim o histórico
+  // de quem atendeu o quê não é sobrescrito.
+  encaminhadoDeId String?      @unique @db.Char(36)
+  encaminhadoDe   Atendimento? @relation("Encaminhamento", fields: [encaminhadoDeId], references: [id])
+  encaminhadoPara Atendimento? @relation("Encaminhamento")
+
+  paciente     Paciente @relation(fields: [pacienteId], references: [id])
+  profissional Usuario? @relation(fields: [profissionalId], references: [id])
+
+  triagem       Triagem?
+  prontuario    Prontuario?
+  salaTokens    SalaToken[]
+  logsAuditoria LogAuditoria[]
+
+  // A fila filtra por status e ordena por entrada. A ordem das colunas importa:
+  // o filtro vem primeiro, a ordenação depois.
+  @@index([status, entradaFila])
+  @@index([pacienteId])
+  @@index([profissionalId])
+}
+
+model Triagem {
+  id            String @id @default(uuid()) @db.Char(36)
+  atendimentoId String @unique @db.Char(36)
+
+  queixa      String   @db.Text
+  pa          String?  @db.VarChar(7) // pressão arterial, ex. "120/80"
+  fc          Int? // frequência cardíaca
+  temperatura Decimal? @db.Decimal(4, 1)
+  satO2       Int? // saturação de oxigênio em %
+
+  autorId  String   @db.Char(36)
+  criadoEm DateTime @default(now()) @db.DateTime(3)
+
+  atendimento Atendimento @relation(fields: [atendimentoId], references: [id])
+  // Sem esta relação, autorId seria uma coluna solta, sem chave estrangeira:
+  // "quem triou" poderia apontar para um usuário que não existe e o banco
+  // aceitaria calado. Num sistema que se propõe auditável, isso não fecha.
+  autor       Usuario     @relation(fields: [autorId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Prontuário — imutável depois de finalizado
+// ---------------------------------------------------------------------------
+
+model Prontuario {
+  id            String @id @default(uuid()) @db.Char(36)
+  atendimentoId String @unique @db.Char(36)
+  autorId       String @db.Char(36)
+
+  anamnese   String  @db.Text
+  conduta    String  @db.Text
+  prescricao String? @db.Text
+
+  // Enquanto for nulo, o prontuário é rascunho e aceita edição.
+  // Depois de preenchido, um gatilho no banco recusa qualquer UPDATE.
+  // Correção passa a ser só por adendo.
+  finalizadoEm DateTime? @db.DateTime(3)
+  criadoEm     DateTime  @default(now()) @db.DateTime(3)
+  atualizadoEm DateTime  @updatedAt @db.DateTime(3)
+
+  atendimento Atendimento        @relation(fields: [atendimentoId], references: [id])
+  autor       Usuario            @relation(fields: [autorId], references: [id])
+  adendos     ProntuarioAdendo[]
+}
+
+// Correção de prontuário finalizado. Só insere, nunca altera nem apaga —
+// é o equivalente digital de anotar uma retificação assinada e datada.
+model ProntuarioAdendo {
+  id           String   @id @default(uuid()) @db.Char(36)
+  prontuarioId String   @db.Char(36)
+  autorId      String   @db.Char(36)
+  texto        String   @db.Text
+  criadoEm     DateTime @default(now()) @db.DateTime(3)
+
+  prontuario Prontuario @relation(fields: [prontuarioId], references: [id])
+  autor      Usuario    @relation(fields: [autorId], references: [id])
+
+  @@index([prontuarioId, criadoEm])
+}
+
+// ---------------------------------------------------------------------------
+// Sala de vídeo
+// ---------------------------------------------------------------------------
+
+model SalaToken {
+  id            String @id @default(uuid()) @db.Char(36)
+  atendimentoId String @db.Char(36)
+
+  // Só o SHA-256 do token. Se o banco vazar, os tokens não vazam junto —
+  // mesmo raciocínio de nunca guardar senha em texto.
+  tokenHash    String        @unique @db.Char(64)
+  participante Participante
+  tipo         TipoTokenSala @default(ACESSO_LIVEKIT)
+
+  // Preenchido para profissional; nulo para o paciente, que não tem conta.
+  usuarioId String? @db.Char(36)
+
+  expiraEm DateTime @db.DateTime(3)
+  // Marca o uso único do link do paciente.
+  usadoEm  DateTime? @db.DateTime(3)
+  // Preenchido em massa quando o atendimento é finalizado.
+  revogadoEm DateTime? @db.DateTime(3)
+  criadoEm   DateTime  @default(now()) @db.DateTime(3)
+
+  atendimento Atendimento @relation(fields: [atendimentoId], references: [id])
+  usuario     Usuario?    @relation(fields: [usuarioId], references: [id])
+
+  @@index([atendimentoId, participante, tipo, revogadoEm])
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria — só insere
+// ---------------------------------------------------------------------------
+
+model LogAuditoria {
+  id String @id @default(uuid()) @db.Char(36)
+
+  // Nulo quando a tentativa foi anônima (por exemplo, token de sala inválido).
+  usuarioId String? @db.Char(36)
+  papel     String? @db.VarChar(20)
+
+  acao          String  @db.VarChar(60) // PRONTUARIO_LEITURA, SALA_ENTRADA...
+  pacienteId    String? @db.Char(36)
+  atendimentoId String? @db.Char(36)
+
+  endpoint   String @db.VarChar(200)
+  metodo     String @db.VarChar(10)
+  // O acesso negado é o registro mais importante da auditoria, então o 403
+  // também é gravado — não só o que deu certo.
+  statusHttp Int
+
+  ip        String? @db.VarChar(45)
+  userAgent String? @db.VarChar(300)
+
+  criadoEm DateTime @default(now()) @db.DateTime(3)
+
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [id])
+  paciente    Paciente?    @relation(fields: [pacienteId], references: [id])
+  atendimento Atendimento? @relation(fields: [atendimentoId], references: [id])
+
+  @@index([pacienteId, criadoEm])
+  @@index([usuarioId, criadoEm])
+}

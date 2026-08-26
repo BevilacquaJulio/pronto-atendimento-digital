@@ -1,0 +1,124 @@
+---
+description: Regras do backend NestJS — estrutura de módulos, guards, validação, erros, auditoria, sala de vídeo e testes.
+globs: ["api/src/**/*.ts", "api/test/**/*.ts"]
+alwaysApply: false
+---
+
+# Backend — NestJS + TypeScript
+
+## Estrutura
+
+```
+api/src/
+  common/                  # técnico, em inglês
+    auth/                  # login, JWT, guards, decorators
+    auditoria/             # interceptor + service
+    prisma/
+    erros/                 # exceções de domínio + filtro global
+    validacao/             # ZodValidationPipe
+  atendimento/             # domínio, em português
+    dominio/               # funções puras (máquina de estados)
+    dto/
+    atendimento.module.ts | .controller.ts | .service.ts
+  prontuario/
+  triagem/
+  paciente/
+  sala/
+    video/                 # VideoProvider + implementações
+  usuario/
+```
+
+Um módulo por agregado do domínio. Nada de pasta `utils` genérica.
+
+## Separação de responsabilidade
+
+- **Controller**: recebe, valida (pipe), delega, devolve. Zero regra de negócio, zero Prisma.
+- **Service**: regra de negócio e orquestração. É onde vive a transação.
+- **`dominio/`**: funções puras, sem I/O, sem Nest. Máquina de estados e cálculos moram aqui — é o que se testa em milissegundos.
+
+## Autorização — nega por padrão, sempre
+
+```ts
+// app.module.ts — ordem importa
+providers: [
+  { provide: APP_GUARD, useClass: JwtAuthGuard },  // autenticado?
+  { provide: APP_GUARD, useClass: PapelGuard },    // o papel permite a rota?
+  { provide: APP_GUARD, useClass: EscopoGuard },   // o recurso é dele?
+]
+```
+
+- Rota aberta é **opt-out** com `@Publico()`. Nunca opt-in. Esquecer o decorator deixa a rota fechada — falha segura.
+- `@Papeis(Papel.MEDICO)` no controller.
+- Escopo (ser dono do atendimento) é checado no guard ou no início do service, **sempre** contra o `usuarioId` do token, nunca contra um ID do corpo da requisição.
+- ADMIN nunca recebe dado clínico. Se você está escrevendo `@Papeis(Papel.ADMIN)` numa rota de prontuário, fila ou paciente, está errado.
+
+## Validação
+
+Zod + `ZodValidationPipe`. Um schema por DTO, tipo derivado com `z.infer`. Nada de `class-validator` misturado.
+
+```ts
+export const criarTriagemSchema = z.object({
+  queixa: z.string().min(3),
+  pa: z.string().regex(/^\d{2,3}\/\d{2,3}$/).optional(),
+  fc: z.number().int().min(20).max(300).optional(),
+});
+export type CriarTriagemDto = z.infer<typeof criarTriagemSchema>;
+```
+
+## Erros
+
+Exceções de domínio próprias, mapeadas no filtro global:
+
+```ts
+export class ConflitoDeEstado extends HttpException {}    // 409
+export class TransicaoInvalida extends HttpException {}   // 422
+export class AcessoNegado extends HttpException {}        // 403
+```
+
+Corpo: `{ codigo, mensagem }`. Nunca vaze stack trace nem mensagem do Prisma para o cliente.
+
+## Auditoria
+
+Toda rota que toca prontuário ou dado clínico leva `@Auditavel('PRONTUARIO_LEITURA')`.
+
+O interceptor grava em `finalize()`, capturando **sucesso e erro** — o `403` negado é o evento de auditoria mais valioso. Registra: `usuarioId`, `papel`, `acao`, `pacienteId`, `atendimentoId`, `endpoint`, `metodo`, `statusHttp`, `ip`, `userAgent`, `criadoEm`.
+
+Escrita fora da transação de negócio, por decisão consciente (documentada no README).
+
+## Sala de vídeo
+
+O backend é a fronteira de segurança; o provider é trocável.
+
+```ts
+export interface VideoProvider {
+  emitirAcesso(sala: string, identity: string, ttlSeg: number): Promise<string>;
+  encerrarSala(sala: string): Promise<void>;
+}
+```
+
+- Token de sala é **opaco** (`crypto.randomBytes(32).toString('base64url')`), guardado como SHA-256, TTL ≤ 15 min, renovável, vinculado a `atendimentoId` + participante.
+- Emissão só se o atendimento estiver `EM_ANDAMENTO` e o requisitante for o profissional dono.
+- Entrada do paciente: valida hash, `atendimentoId`, `expiraEm`, `revogadoEm`, `usadoEm`. Qualquer falha → `403` (nunca `404`, nunca `401`).
+- Finalizar revoga todos os tokens **na transação** e chama `encerrarSala()` no provider — revogar token não desconecta quem já está dentro.
+
+## Comentários
+
+Ver `00-projeto.mdc` §5. Resumo: explique o porquê em português simples, principalmente onde o código parece errado mas está certo. Nada de nota de planejamento ou de processo dentro de arquivo de código.
+
+## Testes — prioridade nesta ordem
+
+1. `test/autorizacao.e2e-spec.ts` — matriz papel × rota, `it.each`, ~23 casos.
+2. `test/concorrencia.e2e-spec.ts` — 10 `POST /iniciar` em `Promise.all`, exatamente 1 sucesso e 9 `409`. MySQL real.
+3. `src/atendimento/dominio/maquina-estados.spec.ts` — unitário, todos os pares inválidos → `422`.
+4. `test/prontuario-imutavel.e2e-spec.ts`
+5. `test/sala-token.e2e-spec.ts`
+
+Não escreva teste unitário de service que só mocka o Prisma — ele prova que o mock foi chamado, não que a regra vale sob concorrência.
+
+## Documentação
+
+Swagger em `/docs`, com `@ApiResponse` declarando **todos** os códigos de erro de cada rota. Documentar `403`/`409`/`422` é obrigatório: são códigos de regra de negócio, não erros genéricos.
+
+## TypeScript
+
+`strict: true`. Sem `any`. Sem `!` para calar o compilador — trate o `undefined`. Retorno explícito em método público de service.

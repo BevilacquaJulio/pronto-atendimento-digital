@@ -1,0 +1,690 @@
+/* =========================================================================
+   PACIENTES — listagem, perfil e linha do cuidado
+   ========================================================================= */
+
+.patients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+/* O card inteiro é o link — antes só o botão "Ver detalhes" levava a algum
+   lugar, e o resto do cartão parecia clicável sem ser. Ver `.link-card`. */
+.patient-card {
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.patient-card:hover {
+  border-color: var(--navy-300);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.patient-card__identity {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+}
+
+.patient-card__identity h2 {
+  overflow: hidden;
+  font-size: var(--text-md);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.patient-card__identity p {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.patient-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.patient-card__details > div {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.patient-card__details dt {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.patient-card__details dd {
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.patient-card__footer {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.patient-card__count {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.patient-card__go {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--navy-600);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  transition: gap var(--duration-fast) var(--ease-out);
+}
+
+.patient-card:hover .patient-card__go {
+  gap: var(--space-2);
+  color: var(--navy-800);
+}
+
+/* -------------------------------------------------------------------------
+   Perfil do paciente
+   ------------------------------------------------------------------------- */
+.patient-profile {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: center;
+  padding: var(--space-6);
+  overflow: hidden;
+  color: #ffffff;
+  background: linear-gradient(140deg, var(--navy-700), var(--navy-950));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.patient-profile::before {
+  position: absolute;
+  top: -50%;
+  right: -4%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(
+    circle,
+    rgb(0 174 169 / 0.34) 0%,
+    transparent 68%
+  );
+  content: '';
+  pointer-events: none;
+}
+
+.patient-profile__main {
+  position: relative;
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  min-width: 0;
+}
+
+/* O texto de status não pode ser estilizado com `span` genérico: o avatar
+   também é um span, e o seletor mais específico virava `display: block`,
+   jogando as iniciais no canto. */
+.patient-profile__avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  color: #ffffff;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  background: rgb(255 255 255 / 0.16);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-radius: var(--radius-xl);
+}
+
+.patient-profile__copy {
+  min-width: 0;
+}
+
+.patient-profile__copy p:first-child {
+  color: var(--teal-200);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.patient-profile__copy h1 {
+  margin-top: var(--space-1);
+  color: #ffffff;
+  font-size: var(--text-2xl);
+}
+
+.patient-profile__status {
+  margin-top: var(--space-1);
+  color: rgb(255 255 255 / 0.66);
+  font-size: var(--text-xs);
+}
+
+.patient-profile__facts {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  width: 100%;
+}
+
+.patient-profile__facts dt {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: rgb(255 255 255 / 0.6);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.patient-profile__facts dd {
+  margin-top: var(--space-1);
+  color: #ffffff;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------
+   Linha do cuidado
+   ------------------------------------------------------------------------- */
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.section-heading h2 {
+  font-size: var(--text-xl);
+}
+
+.section-heading p {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.care-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-left: var(--space-8);
+}
+
+/* Fio vertical da linha do tempo. Desenhado no ::before do container para
+   não precisar de um elemento vazio por entrada. */
+.care-timeline::before {
+  position: absolute;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: 15px;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--teal-300),
+    var(--navy-200) 40%,
+    var(--border) 100%
+  );
+  border-radius: var(--radius-pill);
+  content: '';
+}
+
+.care-entry {
+  position: relative;
+}
+
+.care-entry__marker {
+  position: absolute;
+  top: var(--space-5);
+  left: calc(var(--space-8) * -1 + 8px);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border: 3px solid var(--navy-300);
+  border-radius: 50%;
+}
+
+.care-entry--registered .care-entry__marker {
+  border-color: var(--navy-400);
+}
+
+.care-entry--pending .care-entry__marker {
+  border-color: var(--warning);
+}
+
+.care-entry--triaged .care-entry__marker {
+  border-color: var(--teal-500);
+}
+
+.care-entry--completed .care-entry__marker {
+  border-color: var(--success);
+}
+
+.care-entry--canceled .care-entry__marker {
+  border-color: var(--gray-400);
+}
+
+.care-entry__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.care-entry__note {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Cabeçalho de status de cada atendimento ---- */
+.attendance-stage {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.attendance-stage__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--navy-600);
+  background: var(--navy-50);
+  border: 1px solid var(--navy-100);
+  border-radius: var(--radius-md);
+}
+
+.attendance-stage--pending .attendance-stage__icon {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+}
+
+.attendance-stage--triaged .attendance-stage__icon {
+  color: var(--teal-700);
+  background: var(--teal-50);
+  border-color: var(--teal-200);
+}
+
+.attendance-stage--completed .attendance-stage__icon {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: var(--success-border);
+}
+
+.attendance-stage--canceled .attendance-stage__icon {
+  color: var(--gray-600);
+  background: var(--gray-50);
+  border-color: var(--gray-200);
+}
+
+.attendance-stage__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.attendance-stage__heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.attendance-stage__heading > div > span {
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.attendance-stage__heading h3 {
+  margin-top: 2px;
+  font-size: var(--text-md);
+}
+
+.attendance-stage__heading time {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.attendance-stage__body > p {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.attendance-stage__metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border);
+}
+
+.attendance-stage__metadata dt {
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.attendance-stage__metadata dd {
+  margin-top: 2px;
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* -------------------------------------------------------------------------
+   Bloco clínico: triagem e sinais vitais
+   ------------------------------------------------------------------------- */
+.clinical-block {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.clinical-block__heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.clinical-block__title {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+}
+
+.clinical-block__title > svg {
+  flex-shrink: 0;
+  color: var(--navy-600);
+}
+
+.clinical-block__title strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.clinical-block__title span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+
+.clinical-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.clinical-block__meta time {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.clinical-block__body {
+  padding: var(--space-4);
+}
+
+/* ---- Sinais vitais ---- */
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.vital {
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.vital dt {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.vital dd {
+  margin-top: var(--space-1);
+  color: var(--text-strong);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}
+
+.vital dd small {
+  margin-left: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.vital__range {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+}
+
+/* Fora da faixa de referência do adulto: a borda esquerda muda de cor.
+   É sinalização de apoio, nunca diagnóstico — a leitura é do profissional. */
+.vital--alert {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  border-left-color: var(--danger);
+}
+
+.vital--alert dd {
+  color: var(--risk-vermelho-text);
+}
+
+.vital--watch {
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+  border-left-color: var(--warning);
+}
+
+.vital--watch dd {
+  color: var(--warning);
+}
+
+.vital--empty dd {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* ---- Prontuário ---- */
+.record-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.record-body section h4 {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--navy-700);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.record-body section p {
+  margin-top: var(--space-2);
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+}
+
+.record-addenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  border-top: 1px dashed var(--border);
+}
+
+.record-addenda > strong {
+  color: var(--navy-700);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.record-addenda p {
+  padding: var(--space-3);
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--navy-200);
+  border-radius: var(--radius-sm);
+}
+
+.record-addenda p small {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* -------------------------------------------------------------------------
+   Responsivo
+   ------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .patients-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+
+  .patient-profile {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: flex-start;
+    padding: var(--space-5);
+  }
+
+  .patient-profile__facts {
+    width: 100%;
+    padding-top: var(--space-4);
+    border-top: 1px solid rgb(255 255 255 / 0.14);
+  }
+}
+
+@media (max-width: 560px) {
+  .patient-profile__facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .care-timeline {
+    padding-left: var(--space-6);
+  }
+
+  .care-timeline::before {
+    left: 9px;
+  }
+
+  .care-entry__marker {
+    left: calc(var(--space-6) * -1 + 3px);
+  }
+
+  .care-entry__content {
+    padding: var(--space-4);
+  }
+
+  .patient-profile__avatar {
+    width: 54px;
+    height: 54px;
+    font-size: var(--text-xl);
+  }
+
+  .patient-profile__copy h1 {
+    font-size: var(--text-xl);
+  }
+}

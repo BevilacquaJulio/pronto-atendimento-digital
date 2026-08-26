@@ -1,0 +1,34 @@
+/* =========================================================================
+   PAD — folha de estilo raiz.
+
+   Este arquivo não define estilo: ele só declara a ordem da cascata.
+   Cada camada mora em src/styles/, então achar "onde mexo na fila?" é
+   abrir styles/pages/queue.css — e não caçar uma linha no meio de um
+   arquivo de milhares.
+
+   Ordem importa:
+     1. tokens      variáveis (nada as sobrescreve)
+     2. base        reset e tipografia
+     3. primitives  componentes de src/components/ui
+     4. brand       marca (depende dos tokens, não depende de layout)
+     5. shell       layout autenticado
+     6. pages       telas, na ordem do fluxo assistencial
+     7. motion      animação e prefers-reduced-motion (por último, para
+                    conseguir desligar movimento de qualquer camada acima)
+   ========================================================================= */
+
+@import 'tailwindcss';
+
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/primitives.css';
+@import './styles/brand.css';
+@import './styles/shell.css';
+
+@import './styles/pages/login.css';
+@import './styles/pages/queue.css';
+@import './styles/pages/patients.css';
+@import './styles/pages/room.css';
+@import './styles/pages/admin.css';
+
+@import './styles/motion.css';

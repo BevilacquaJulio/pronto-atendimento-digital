@@ -1,0 +1,37 @@
+# Normaliza fim de linha no repositório.
+#
+# Sem isto, editar um arquivo no Windows troca LF por CRLF e o Git marca o
+# arquivo inteiro como alterado — nove arquivos de configuração da API já
+# estavam nesse estado, poluindo o diff de qualquer commit e atrapalhando
+# quem for revisar o código.
+#
+# `text=auto eol=lf`: o Git guarda sempre LF e converte na checkout conforme
+# a plataforma. Rode uma vez após adicionar este arquivo:
+#
+#   git add --renormalize .
+#
+* text=auto eol=lf
+
+# Binários — nunca converter.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+
+# Scripts que só rodam no Windows precisam de CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Scripts de shell precisam de LF mesmo se editados no Windows,
+# senão o contêiner falha com "bad interpreter: /bin/sh^M".
+*.sh text eol=lf
+
+# Lockfiles: gerados, não revisados linha a linha.
+package-lock.json -diff linguist-generated

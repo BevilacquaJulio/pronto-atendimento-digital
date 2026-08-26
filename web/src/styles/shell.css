@@ -1,0 +1,632 @@
+/* =========================================================================
+   SHELL — sidebar, topbar, drawer móvel e menu de perfil.
+   ========================================================================= */
+
+.app-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--canvas);
+  transition: grid-template-columns var(--duration-normal) var(--ease-out);
+}
+
+.app-layout.is-collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar
+   ------------------------------------------------------------------------- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100dvh;
+  padding: var(--space-5) var(--space-4);
+  overflow: hidden;
+  color: var(--navy-100);
+  background:
+    radial-gradient(
+      120% 90% at 0% 0%,
+      rgb(0 174 169 / 0.22) 0%,
+      transparent 58%
+    ),
+    linear-gradient(178deg, var(--navy-800) 0%, var(--navy-950) 100%);
+  border-right: 1px solid var(--navy-900);
+}
+
+.sidebar__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.sidebar__brand-mark--full {
+  /* A sidebar já define `color`, e o símbolo é desenhado em currentColor:
+     nada de inverter imagem por filtro para a marca aparecer no fundo escuro. */
+  max-width: 100%;
+}
+
+.sidebar__brand-mark--compact {
+  display: none;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-y: auto;
+}
+
+.sidebar__section-label {
+  padding: var(--space-4) var(--space-3) var(--space-2);
+  color: rgb(255 255 255 / 0.42);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sidebar-link {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  color: rgb(255 255 255 / 0.76);
+  border-radius: var(--radius-md);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-link:hover {
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.07);
+}
+
+.sidebar-link.is-active {
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.11);
+}
+
+/* Marcador do item ativo: cresce a partir do centro em vez de aparecer
+   pronto. Custa 200ms e faz a navegação parecer contínua. */
+.sidebar-link.is-active::before {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--space-3) * -1);
+  width: 3px;
+  height: 22px;
+  background: var(--teal-400);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 12px rgb(0 174 169 / 0.7);
+  transform: translateY(-50%);
+  content: '';
+  animation: marker-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes marker-in {
+  from {
+    height: 0;
+  }
+  to {
+    height: 22px;
+  }
+}
+
+.sidebar-link__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: inherit;
+  background: rgb(255 255 255 / 0.07);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-link.is-active .sidebar-link__icon {
+  color: var(--navy-900);
+  background: var(--teal-400);
+}
+
+.sidebar-link__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar-link__text strong {
+  color: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.sidebar-link__text small {
+  color: rgb(255 255 255 / 0.5);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* Contador ao lado do item de menu — quantos itens exigem atenção agora. */
+.sidebar-link__count {
+  margin-left: auto;
+  padding: 2px var(--space-2);
+  color: var(--navy-900);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  background: var(--teal-300);
+  border-radius: var(--radius-pill);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-link__count--alert {
+  color: #ffffff;
+  background: var(--risk-vermelho);
+}
+
+.sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.sidebar__trust {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-md);
+}
+
+.sidebar__trust > svg {
+  flex-shrink: 0;
+  color: var(--teal-300);
+}
+
+.sidebar__trust div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar__trust strong {
+  color: #ffffff;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.sidebar__trust span {
+  color: rgb(255 255 255 / 0.55);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.sidebar__collapse {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  color: rgb(255 255 255 / 0.6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar__collapse:hover {
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* ---- Estado colapsado: só ícones ---- */
+.app-layout.is-collapsed .sidebar {
+  padding-inline: var(--space-3);
+}
+
+.app-layout.is-collapsed .sidebar-link__text,
+.app-layout.is-collapsed .sidebar__section-label,
+.app-layout.is-collapsed .sidebar__trust div,
+.app-layout.is-collapsed .sidebar__collapse span {
+  display: none;
+}
+
+.app-layout.is-collapsed .sidebar__brand {
+  align-items: center;
+}
+
+.app-layout.is-collapsed .sidebar__brand-mark--full {
+  display: none;
+}
+
+.app-layout.is-collapsed .sidebar__brand-mark--compact {
+  display: inline-flex;
+}
+
+.app-layout.is-collapsed .sidebar__brand,
+.app-layout.is-collapsed .sidebar-link,
+.app-layout.is-collapsed .sidebar__trust {
+  justify-content: center;
+}
+
+.app-layout.is-collapsed .sidebar-link__count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  margin: 0;
+  padding: 0 5px;
+  font-size: 10px;
+}
+
+/* -------------------------------------------------------------------------
+   Área principal
+   ------------------------------------------------------------------------- */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: var(--topbar-height);
+  padding: var(--space-3) var(--content-pad);
+  background: rgb(255 255 255 / 0.86);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+
+.topbar__menu-button {
+  display: none;
+}
+
+.topbar__context {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+
+.breadcrumb a,
+.breadcrumb__current {
+  display: inline-flex;
+  align-items: center;
+}
+
+.breadcrumb a:hover {
+  color: var(--navy-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.breadcrumb__separator {
+  /* Irmão no flex, não filho do rótulo. Em base.css o svg é `display: block`;
+     dentro do mesmo span de "Detalhes" o chevron ia para a linha de cima. */
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.breadcrumb__current {
+  color: var(--text-strong);
+  font-weight: var(--weight-semibold);
+}
+
+.topbar__greeting {
+  color: var(--text-strong);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.topbar__actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Indicador de conexão: telemedicina cai, e o profissional precisa saber se
+   o problema é a rede dele antes de repetir uma ação clínica. */
+.connection-pill {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-pill);
+}
+
+.connection-pill--online {
+  color: var(--success);
+  background: var(--success-soft);
+  border: 1px solid var(--success-border);
+}
+
+.connection-pill--offline {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+}
+
+.connection-pill::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+
+/* -------------------------------------------------------------------------
+   Dropdown de perfil
+   ------------------------------------------------------------------------- */
+.dropdown {
+  position: relative;
+}
+
+.dropdown__trigger {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.dropdown__trigger:hover,
+.dropdown__trigger[aria-expanded='true'] {
+  background: var(--navy-50);
+  border-color: var(--border);
+}
+
+.profile-trigger {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+}
+
+.profile-trigger__text {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.profile-trigger__text strong {
+  max-width: 160px;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.profile-trigger__text small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+@media (min-width: 640px) {
+  .profile-trigger__text {
+    display: flex;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Conteúdo
+   ------------------------------------------------------------------------- */
+.app-content {
+  flex: 1;
+  padding: var(--space-8) var(--content-pad) var(--space-16);
+}
+
+/* -------------------------------------------------------------------------
+   Drawer móvel
+   ------------------------------------------------------------------------- */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background: rgb(6 28 46 / 0.5);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--duration-normal) var(--ease-out),
+    visibility var(--duration-normal);
+}
+
+.mobile-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(300px, 86vw);
+  padding: var(--space-5) var(--space-4);
+  overflow-y: auto;
+  color: var(--navy-100);
+  background:
+    radial-gradient(
+      120% 80% at 0% 0%,
+      rgb(0 174 169 / 0.22) 0%,
+      transparent 58%
+    ),
+    linear-gradient(178deg, var(--navy-800) 0%, var(--navy-950) 100%);
+  box-shadow: var(--shadow-xl);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    visibility var(--duration-slow);
+}
+
+.mobile-drawer.is-open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.mobile-drawer__close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.mobile-drawer__close:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+/* -------------------------------------------------------------------------
+   Aviso de atualização do PWA
+   ------------------------------------------------------------------------- */
+.pwa-prompt {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  width: min(380px, calc(100vw - var(--space-8)));
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--highlight);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: toast-in var(--duration-slow) var(--ease-spring);
+}
+
+.pwa-prompt__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--highlight-hover);
+}
+
+.pwa-prompt__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-prompt__content strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+}
+
+.pwa-prompt__content p {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.pwa-prompt__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* -------------------------------------------------------------------------
+   Responsivo
+   ------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .app-layout,
+  .app-layout.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .topbar__menu-button {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-content {
+    padding-bottom: var(--space-12);
+  }
+
+  .topbar {
+    gap: var(--space-3);
+  }
+
+  .topbar__greeting {
+    font-size: var(--text-sm);
+  }
+
+  .toast-viewport,
+  .pwa-prompt {
+    right: var(--space-3);
+    bottom: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+  }
+}

@@ -1,0 +1,697 @@
+/* =========================================================================
+   SALAS — lobby, videoconsulta e painéis assistenciais
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   Lobby (antes de entrar na chamada)
+   ------------------------------------------------------------------------- */
+.room-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.room-lobby__card {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.room-lobby__visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(150deg, var(--navy-700), var(--navy-950));
+}
+
+.room-lobby__visual > span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: var(--radius-2xl);
+}
+
+/* Anéis concêntricos da marca. Existem só como textura de fundo — por isso
+   ficam com aria-hidden e não recebem animação em prefers-reduced-motion. */
+.brand-rings {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 28%,
+      rgb(0 174 169 / 0.16) 28.4%,
+      transparent 29%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 44%,
+      rgb(0 174 169 / 0.12) 44.4%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 62%,
+      rgb(255 255 255 / 0.08) 62.4%,
+      transparent 63%
+    );
+  pointer-events: none;
+}
+
+.room-lobby__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-7);
+}
+
+.room-lobby__content > p {
+  color: var(--highlight-hover);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.room-lobby__content h1 {
+  font-size: var(--text-2xl);
+}
+
+.room-lobby__content > small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.room-patient-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.room-safety-note {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--space-4);
+  color: var(--navy-700);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  background: var(--navy-50);
+  border: 1px solid var(--navy-100);
+  border-radius: var(--radius-md);
+}
+
+.room-safety-note > svg {
+  flex-shrink: 0;
+  color: var(--highlight-hover);
+}
+
+/* Checagem de dispositivos antes de entrar: evita o clássico "não te ouço"
+   nos primeiros trinta segundos da consulta. */
+.device-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.device-check__item {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.device-check__item--ok {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: var(--success-border);
+}
+
+.device-check__item--blocked {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+/* -------------------------------------------------------------------------
+   Convite do paciente
+   ------------------------------------------------------------------------- */
+.invite-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.invite-card__heading {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.invite-card__heading > span {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: var(--highlight-hover);
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-md);
+}
+
+.invite-card__heading h2 {
+  font-size: var(--text-md);
+}
+
+.invite-card__heading p {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+
+.invite-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.invite-link > span {
+  color: var(--text-strong);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.invite-link input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.invite-link input:focus {
+  border-color: var(--highlight);
+  border-style: solid;
+  box-shadow: 0 0 0 3px var(--highlight-ring);
+}
+
+.invite-expiration {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--warning);
+  font-size: var(--text-xs);
+}
+
+.invite-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* -------------------------------------------------------------------------
+   Videoconsulta
+   ------------------------------------------------------------------------- */
+.conference-screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--navy-950);
+}
+
+.conference-screen--embedded {
+  position: static;
+  min-height: calc(100dvh - var(--topbar-height));
+}
+
+.room-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+.conference-stage {
+  position: relative;
+  min-width: 0;
+  background: var(--navy-950);
+}
+
+.conference-room {
+  width: 100%;
+  height: 100%;
+}
+
+.conference-disconnected {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  text-align: center;
+  background: rgb(6 28 46 / 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.conference-disconnected > svg {
+  color: var(--warning);
+}
+
+.conference-disconnected strong {
+  display: block;
+  color: #ffffff;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.conference-disconnected p {
+  max-width: 44ch;
+  margin-top: var(--space-2);
+  color: rgb(255 255 255 / 0.7);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.conference-disconnected small {
+  display: block;
+  margin-top: var(--space-3);
+  color: var(--risk-laranja);
+  font-size: var(--text-xs);
+}
+
+.conference-disconnected__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.conference-disconnected--patient > div {
+  max-width: 460px;
+}
+
+.conference-disconnected--patient .button {
+  min-width: 160px;
+}
+
+/* Painel lateral assistencial — rola de forma independente do vídeo. */
+.care-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  overflow-y: auto;
+  background: var(--canvas);
+  border-left: 1px solid var(--border);
+}
+
+.care-workspace__patient {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.care-workspace__patient p {
+  color: var(--highlight-hover);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.care-workspace__patient h1 {
+  margin-top: var(--space-1);
+  font-size: var(--text-lg);
+}
+
+.care-workspace__patient > div > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------
+   Painéis clínicos (triagem, prontuário, decisão)
+   ------------------------------------------------------------------------- */
+.clinical-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.clinical-panel__heading {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.clinical-panel__heading > span {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: var(--navy-600);
+  background: var(--navy-50);
+  border: 1px solid var(--navy-100);
+  border-radius: var(--radius-md);
+}
+
+.clinical-panel__heading h2 {
+  font-size: var(--text-md);
+}
+
+.clinical-panel__heading p {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+
+.clinical-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.vital-signs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.clinical-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.clinical-actions .button {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Resumo da triagem visto pelo médico: é a informação que ele recebe do
+   encaminhamento, então fica destacada acima do formulário. */
+.triage-reference {
+  padding: var(--space-4);
+  background: linear-gradient(160deg, var(--teal-50), var(--surface));
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-md);
+}
+
+.triage-reference__label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--teal-800);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.triage-reference p {
+  margin-top: var(--space-2);
+  color: var(--text-strong);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+}
+
+.triage-reference__vitals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.triage-reference__vitals span {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-sm);
+}
+
+.save-indicator {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--success);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+/* -------------------------------------------------------------------------
+   Ações após a chamada
+   ------------------------------------------------------------------------- */
+.post-meeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.post-meeting__heading {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.post-meeting__heading > span {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: var(--teal-700);
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-lg);
+}
+
+.post-meeting__heading p {
+  color: var(--highlight-hover);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.post-meeting__heading h2 {
+  margin-top: var(--space-1);
+  font-size: var(--text-lg);
+}
+
+.post-meeting__heading small {
+  display: block;
+  max-width: 68ch;
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+/* -------------------------------------------------------------------------
+   Sala do paciente (fora do shell autenticado)
+   ------------------------------------------------------------------------- */
+.patient-room-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-6);
+  overflow: hidden;
+  background: linear-gradient(150deg, var(--navy-800), var(--navy-950));
+}
+
+.patient-room-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  width: min(460px, 100%);
+  padding: var(--space-8);
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.patient-room-card > .brand-logo {
+  margin-bottom: var(--space-2);
+  color: var(--navy-700);
+}
+
+.patient-room-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  color: var(--navy-700);
+  background: var(--navy-50);
+  border: 1px solid var(--navy-100);
+  border-radius: var(--radius-xl);
+}
+
+.patient-room-card > p {
+  color: var(--highlight-hover);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.patient-room-card h1 {
+  font-size: var(--text-xl);
+}
+
+.patient-room-card__lead {
+  max-width: 40ch;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.patient-room-card__security {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: left;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.patient-room-card__security > svg {
+  flex-shrink: 0;
+  color: var(--highlight-hover);
+}
+
+/* -------------------------------------------------------------------------
+   Responsivo
+   ------------------------------------------------------------------------- */
+@media (max-width: 1180px) {
+  .room-workspace {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 1024px) {
+  /* Em tela estreita o painel assistencial vai para baixo do vídeo. Empilhar
+     é melhor do que espremer: o formulário de triagem tem campos numéricos
+     que ficam impossíveis abaixo de ~320px de largura. */
+  .room-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(320px, 52dvh) auto;
+    min-height: auto;
+  }
+
+  .care-workspace {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .conference-screen {
+    position: static;
+    overflow-y: auto;
+  }
+
+  .room-lobby__card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-lobby__visual {
+    min-height: 150px;
+  }
+}
+
+@media (max-width: 560px) {
+  .room-lobby__content,
+  .post-meeting {
+    padding: var(--space-5);
+  }
+
+  .patient-room-card {
+    padding: var(--space-6);
+  }
+
+  .clinical-actions .button {
+    min-width: 100%;
+  }
+}

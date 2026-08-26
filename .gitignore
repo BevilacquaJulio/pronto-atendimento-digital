@@ -1,0 +1,115 @@
+# =============================================================================
+# PAD — Pronto Atendimento Digital
+# NestJS + Prisma + MySQL · React + Vite + PWA · Docker · Windows
+# =============================================================================
+
+# --- Notas pessoais ----------------------------------------------------------
+# Planejamento e rascunhos que não fazem parte da entrega.
+_notas/
+README-ignored.md
+readme-ignored.md
+
+# Compose local (Traefik HTTP). Não versionar; o de produção é docker-compose.yml.
+docker-compose.local.yml
+
+# --- Segredos ----------------------------------------------------------------
+# As duas primeiras linhas são necessárias: `.env.*` NÃO casa com `.env`.
+# As negações vêm depois das regras, senão não têm efeito.
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# --- Dependências ------------------------------------------------------------
+node_modules/
+
+# --- Client gerado pelo Prisma 7 ---------------------------------------------
+# O generator `prisma-client` escreve fora de node_modules. Recriado por
+# `prisma generate` no build.
+api/generated/
+
+# --- Skills de agente empacotadas pelo Prisma CLI ----------------------------
+# O `prisma init` do Prisma 7 despeja ~200 arquivos de documentação para
+# Claude, Cursor e Windsurf dentro de api/. São arquivos do fornecedor, não do
+# projeto. As regras do projeto ficam em .cursor/rules na raiz, essas sim
+# versionadas.
+api/.agents/
+api/.claude/
+api/.windsurf/
+api/skills-lock.json
+
+# --- Build -------------------------------------------------------------------
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# --- Cache -------------------------------------------------------------------
+.vite/
+.cache/
+*.local
+
+# --- Vite PWA ----------------------------------------------------------------
+# Service worker gerado em modo de desenvolvimento.
+web/dev-dist/
+
+# --- Logs --------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# --- Testes ------------------------------------------------------------------
+coverage/
+.nyc_output/
+
+# --- Docker ------------------------------------------------------------------
+docker-compose.override.yml
+*.pid
+
+# --- Banco de dados ----------------------------------------------------------
+# Dump contém dado real de paciente. Nunca versionar.
+# Atenção: `api/prisma/migrations/` DEVE ser versionado — é a história do schema.
+*.sql.gz
+*.dump
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+sql/dumps/
+sql/backups/
+
+# --- Sistema operacional (Windows + OneDrive geram estes sozinhos) -----------
+Desktop.ini
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+.DS_Store
+._*
+*~
+
+# --- Editores ----------------------------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*.bak
+*.orig
+
+# =============================================================================
+# Propositalmente NÃO ignorados
+# =============================================================================
+# .cursor/rules/        → regras do projeto, versionadas de propósito
+# package-lock.json     → garante build reproduzível
+# api/prisma/migrations → histórico versionado do schema
+# .env.example          → contrato das variáveis de ambiente

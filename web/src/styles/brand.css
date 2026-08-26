@@ -1,0 +1,43 @@
+/* =========================================================================
+   MARCA — símbolo e assinatura do PAD.
+
+   O símbolo é desenhado com `currentColor`, então este arquivo não define
+   cor: quem posiciona a marca decide a cor pelo contexto (branco no menu
+   escuro, navy no cartão claro). É o que dispensa uma segunda arte invertida.
+   ========================================================================= */
+
+.brand-logo {
+  display: inline-flex;
+  gap: var(--space-3);
+  align-items: center;
+  color: inherit;
+}
+
+.brand-logo__symbol {
+  display: block;
+  flex: none;
+}
+
+.brand-logo__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.brand-logo__name {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: 0.14em;
+}
+
+.brand-logo__tagline {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-caps);
+  text-wrap: balance;
+  text-transform: uppercase;
+  opacity: 0.7;
+}

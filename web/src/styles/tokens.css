@@ -1,0 +1,268 @@
+/* =========================================================================
+   TOKENS — a única fonte de verdade visual do PAD.
+   Nenhum componente escreve cor, sombra ou espaçamento literal: tudo sai
+   daqui. Para mudar a cara do produto inteiro, mexa neste arquivo.
+
+   A paleta parte de dois hexadecimais fixos, e o resto é derivado deles:
+     #11426b  azul institucional   — superfícies de marca e ações primárias
+     #00aea9  teal                 — acento; único uso é destacar o que muda
+   Rampas em vez de opacidade improvisada: cada degrau existe porque alguma
+   tela precisou de estado, fundo ou borda que os vizinhos não resolviam.
+   ========================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------------
+     1. Escalas de marca
+     Os dois hexadecimais fixos ocupam o degrau 700 (azul) e 500 (teal).
+     Os vizinhos foram gerados a partir deles para estado, fundo e borda.
+     --------------------------------------------------------------------- */
+  --navy-50: #f2f6fa;
+  --navy-100: #e2ecf4;
+  --navy-200: #c3d8e8;
+  --navy-300: #93b7d3;
+  --navy-400: #5b8eb6;
+  --navy-500: #2f6c9a;
+  --navy-600: #1a5380;
+  --navy-700: #11426b; /* marca */
+  --navy-800: #0d3557;
+  --navy-900: #0a2942;
+  --navy-950: #061c2e;
+
+  --teal-50: #eafaf9;
+  --teal-100: #cdf3f1;
+  --teal-200: #99e7e4;
+  --teal-300: #5cd6d2;
+  --teal-400: #22c1bd;
+  --teal-500: #00aea9; /* marca */
+  --teal-600: #008d8a;
+  --teal-700: #027170;
+  --teal-800: #075a5a;
+  --teal-900: #0a4a4a;
+
+  --gray-25: #fafbfc;
+  --gray-50: #f4f6f8;
+  --gray-100: #eaeef1;
+  --gray-200: #dbe1e6;
+  --gray-300: #c2cbd3;
+  --gray-400: #9aa4ad;
+  --gray-500: #73777c; /* marca */
+  --gray-600: #5b6167;
+  --gray-700: #454b51;
+  --gray-800: #2f353b;
+  --gray-900: #1c2126;
+
+  /* ---------------------------------------------------------------------
+     2. Papéis semânticos
+     Componentes referenciam o papel (--text-muted), nunca o degrau
+     (--gray-500). Assim a rampa pode ser reafinada sem caçar usos.
+     --------------------------------------------------------------------- */
+  --canvas: #eff4f8;
+  --canvas-deep: #e6eef4;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: var(--gray-50);
+  --surface-inset: var(--navy-50);
+
+  --text-strong: var(--navy-900);
+  --text: var(--gray-700);
+  --text-muted: var(--gray-500);
+  --text-faint: var(--gray-400);
+  --text-on-brand: #f4fbff;
+
+  --border: #dfe6ec;
+  --border-subtle: #ebf0f4;
+  --border-strong: #c7d3dd;
+  --border-brand: var(--navy-200);
+
+  --accent: var(--navy-700);
+  --accent-hover: var(--navy-600);
+  --accent-active: var(--navy-800);
+  --accent-soft: var(--navy-50);
+  --accent-ring: rgb(17 66 107 / 0.28);
+
+  --highlight: var(--teal-500);
+  --highlight-hover: var(--teal-600);
+  --highlight-soft: var(--teal-50);
+  --highlight-ring: rgb(0 174 169 / 0.34);
+
+  /* ---------------------------------------------------------------------
+     3. Feedback
+     --------------------------------------------------------------------- */
+  --danger: #b3261e;
+  --danger-hover: #97201a;
+  --danger-soft: #fdecea;
+  --danger-border: #f3c9c5;
+
+  --warning: #9a5b06;
+  --warning-soft: #fff5e6;
+  --warning-border: #f6ddb4;
+
+  --success: #17694f;
+  --success-soft: #e7f6ef;
+  --success-border: #bfe4d3;
+
+  --info: var(--navy-600);
+  --info-soft: var(--navy-50);
+  --info-border: var(--navy-200);
+
+  /* ---------------------------------------------------------------------
+     4. Classificação de risco (Protocolo de Manchester)
+     A cor é normativa e não pode ser "melhorada" por gosto: vermelho é
+     emergência em qualquer serviço de saúde do país. O que dá para
+     controlar é o contraste — por isso o texto usa um tom escuro sobre
+     fundo claro, e o ponto colorido carrega o matiz do protocolo.
+     A cor nunca aparece sozinha: todo badge de risco leva rótulo escrito,
+     porque ~8% dos homens têm alguma discromatopsia.
+     --------------------------------------------------------------------- */
+  --risk-vermelho: #c62828;
+  --risk-vermelho-text: #8c1d18;
+  --risk-vermelho-soft: #fdecea;
+  --risk-vermelho-border: #f2c4c0;
+
+  --risk-laranja: #e07b00;
+  --risk-laranja-text: #8a4b00;
+  --risk-laranja-soft: #fff3e2;
+  --risk-laranja-border: #f7d7ac;
+
+  --risk-amarelo: #e3b100;
+  --risk-amarelo-text: #7a5d00;
+  --risk-amarelo-soft: #fdf6dd;
+  --risk-amarelo-border: #eddfa0;
+
+  --risk-verde: #1f9d55;
+  --risk-verde-text: #14663a;
+  --risk-verde-soft: #e8f6ee;
+  --risk-verde-border: #bce0cc;
+
+  --risk-azul: #2f80c4;
+  --risk-azul-text: #1c5482;
+  --risk-azul-soft: #e9f2fa;
+  --risk-azul-border: #bcd6ec;
+
+  --risk-none: var(--gray-400);
+  --risk-none-text: var(--gray-600);
+  --risk-none-soft: var(--gray-50);
+  --risk-none-border: var(--gray-200);
+
+  /* ---------------------------------------------------------------------
+     5. Tipografia — escala modular 1.2 a partir de 0.875rem
+     --------------------------------------------------------------------- */
+  --font-sans:
+    'Aptos', 'Segoe UI Variable', 'Segoe UI', -apple-system,
+    BlinkMacSystemFont, 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SFMono-Regular', 'JetBrains Mono', 'Cascadia Mono',
+    Consolas, monospace;
+
+  --text-2xs: 0.6875rem; /* 11px — apenas rótulos em caixa alta */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.8125rem; /* 13px */
+  --text-base: 0.875rem; /* 14px — corpo padrão de software denso */
+  --text-md: 0.9375rem; /* 15px */
+  --text-lg: 1.0625rem; /* 17px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem; /* 36px */
+
+  --leading-tight: 1.18;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+
+  --tracking-caps: 0.08em;
+  --tracking-tight: -0.014em;
+  --tracking-tighter: -0.022em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------------------------------------------------------------------
+     6. Espaçamento — base 4px
+     --------------------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* ---------------------------------------------------------------------
+     7. Forma
+     --------------------------------------------------------------------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-pill: 999px;
+
+  /* Sombras tingidas de azul, nunca preto puro: preto sobre fundo frio
+     lê como sujeira, azul lê como profundidade. */
+  --shadow-xs: 0 1px 2px rgb(10 41 66 / 0.06);
+  --shadow-sm:
+    0 1px 2px rgb(10 41 66 / 0.05), 0 2px 6px rgb(10 41 66 / 0.05);
+  --shadow-md:
+    0 2px 4px rgb(10 41 66 / 0.05), 0 8px 20px rgb(10 41 66 / 0.08);
+  --shadow-lg:
+    0 4px 8px rgb(10 41 66 / 0.05), 0 18px 40px rgb(10 41 66 / 0.11);
+  --shadow-xl:
+    0 8px 16px rgb(10 41 66 / 0.06), 0 32px 64px rgb(10 41 66 / 0.16);
+  --shadow-brand: 0 6px 16px rgb(17 66 107 / 0.22);
+  --shadow-inset-top: inset 0 1px 0 rgb(255 255 255 / 0.16);
+
+  /* ---------------------------------------------------------------------
+     8. Movimento
+     Durações curtas de propósito: software clínico é usado sob pressão,
+     e animação longa vira espera. Nada acima de 260ms.
+     --------------------------------------------------------------------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --duration-instant: 90ms;
+  --duration-fast: 140ms;
+  --duration-normal: 200ms;
+  --duration-slow: 260ms;
+
+  /* ---------------------------------------------------------------------
+     9. Layout
+     --------------------------------------------------------------------- */
+  --sidebar-width: 268px;
+  --sidebar-width-collapsed: 76px;
+  --topbar-height: 68px;
+  --content-max: 1440px;
+  --content-pad: var(--space-8);
+
+  /* ---------------------------------------------------------------------
+     10. Camadas — números nomeados evitam a corrida do z-index: 9999
+     --------------------------------------------------------------------- */
+  --z-base: 1;
+  --z-sticky: 20;
+  --z-drawer: 60;
+  --z-dropdown: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --content-pad: var(--space-6);
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --content-pad: var(--space-4);
+    --topbar-height: 60px;
+  }
+}

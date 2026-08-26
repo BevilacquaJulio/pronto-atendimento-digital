@@ -1,0 +1,11 @@
+{
+  // O tsconfig.build.json exclui esta pasta. Sem um tsconfig próprio, o
+  // editor trata os e2e como projeto órfão e não carrega as globais do Jest
+  // (describe, it, expect) — o runtime do Jest continua funcionando.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["./**/*.ts"]
+}

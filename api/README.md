@@ -22,7 +22,7 @@ npm run test:e2e       # baixo nível; exige DATABASE_URL em banco pad_test*
 serviço `migrate` roda só `prisma migrate deploy`. O seed é comando à parte.
 
 Para uma instalação nova, prefira `npm run test:e2e:local`. O executor usa o
-`docker-compose.test.yml` da raiz, não depende do banco `pad` e sempre tenta
+`docker-compose.test.yml` da raiz, não depende do banco `bevilabs_pad` e sempre tenta
 remover o MySQL temporário ao terminar.
 
 ## Onde mexer

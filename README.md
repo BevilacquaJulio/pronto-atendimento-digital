@@ -212,7 +212,7 @@ compartilhado já existentes no host.
 
 - Docker com Docker Compose v2.
 - Redes externas `traefik` e `mysql_shared`.
-- Banco `pad` e usuário `pad` criados administrativamente no MySQL compartilhado,
+- Banco `bevilabs_pad` e usuário `pad` criados administrativamente no MySQL compartilhado,
   com a mesma senha configurada em `MYSQL_PASSWORD` e `DATABASE_URL`.
 - Portas `7881/tcp` e `7882/udp` livres no host (mídia WebRTC).
 - Pelo menos 2 GB de memória disponível para os containers.
@@ -371,7 +371,7 @@ npm run test:e2e:local
 
 Esse comando cria um MySQL temporário em um projeto Compose separado na
 porta `3307`, aplica migrations e seed do zero, executa a suíte em série e
-remove o container ao final — mesmo se um teste falhar. O banco `pad` e os
+remove o container ao final — mesmo se um teste falhar. O banco `bevilabs_pad` e os
 containers da demonstração não são reutilizados nem interrompidos.
 
 Se a porta `3307` estiver ocupada:

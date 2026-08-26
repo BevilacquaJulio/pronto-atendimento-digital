@@ -219,8 +219,8 @@ export function LoginPage() {
               ))}
             </div>
             <p className="demo-access__hint">
-              Preenche e-mail e senha do seed. Confirme em &ldquo;Acessar
-              plataforma&rdquo;.
+              Preenche e-mail e senha ({SENHA_DEMO}) do seed. Confirme em
+              &ldquo;Acessar plataforma&rdquo;.
             </p>
           </div>
 

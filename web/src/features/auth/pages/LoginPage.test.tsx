@@ -70,7 +70,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('E-mail profissional')).toHaveValue(
       'ana.ferreira@pad.local',
     )
-    expect(screen.getByLabelText('Senha')).toHaveValue('Senha@123')
+    expect(screen.getByLabelText('Senha')).toHaveValue('SenhaDemo@123')
 
     await user.click(
       screen.getByRole('button', { name: 'Preencher conta demo de médico' }),
@@ -78,7 +78,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('E-mail profissional')).toHaveValue(
       'carla.nogueira@pad.local',
     )
-    expect(screen.getByLabelText('Senha')).toHaveValue('Senha@123')
+    expect(screen.getByLabelText('Senha')).toHaveValue('SenhaDemo@123')
   })
 
   it('autentica e direciona o profissional para a fila', async () => {
@@ -98,7 +98,7 @@ describe('LoginPage', () => {
       screen.getByLabelText('E-mail profissional'),
       'carla.nogueira@pad.local',
     )
-    await user.type(screen.getByLabelText('Senha'), 'Senha@123')
+    await user.type(screen.getByLabelText('Senha'), 'SenhaDemo@123')
     await user.click(screen.getByRole('button', { name: 'Acessar plataforma' }))
 
     expect(await screen.findByText('Fila carregada')).toBeInTheDocument()

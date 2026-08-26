@@ -39,7 +39,7 @@ const CONTAS_DEMO = [
   },
 ] as const
 
-const SENHA_DEMO = 'Senha@123'
+const SENHA_DEMO = 'SenhaDemo@123'
 
 const trustPoints = [
   {
